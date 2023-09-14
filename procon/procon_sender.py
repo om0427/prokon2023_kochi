@@ -1,6 +1,8 @@
 import procon_class as goc
 import pygame, sys, os,csv
 from pygame.locals import *
+import random#ランダムのやつのため
+from numpy import argmax#最大値探索のため
 
 #start :初期設定を行う(0:グラフィカル 1:なし)
 #update:画面を更新する(0)
@@ -12,6 +14,28 @@ from pygame.locals import *
 #       3 方向
 #send  :送信し、ゲームを進行する（中止）
 #       0
+
+#--追記--
+def mc_action(state):#原始モンテカルロでの行動選択。stateは現在の状態？
+    legal_action=LegalMove(goc.Functions.height, goc.Functions.width, goc.Functions.mason, goc.Functions.walls, goc.Functions.masons, goc.Functions.structures)#合法手の取得
+    values = [0] * len(legal_action)#リスト化？
+    for i, actioin in enumerate(legal_action):
+        for _ in range(10):
+            values[i] += -playout(next(goc.Functions.actions))#プレイアウト結果
+    return legal_action[argmax(values)]
+
+def playout(state):#現在の局面から最後までをランダムに打ち合って評価
+#    if 負けたら
+#        return -1
+#    if 引き分けなら
+#        return 0
+    return -playout(next(random_action(state)))#nextは次の状態の取得
+
+def random_action(state):
+    legal_actions = LegalMove(goc.Functions.height, goc.Functions.width, goc.Functions.mason, goc.Functions.walls, goc.Functions.masons, goc.Functions.structures)
+    return legal_actions[random.randint(0,len(legal_actions)-1)]
+#--ここまで--
+
 
 def main():
     #goc.Functions.init()
