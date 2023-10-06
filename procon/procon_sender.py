@@ -13,23 +13,23 @@ from pygame.locals import *
 #send  :送信し、ゲームを進行する（中止）
 #       0
 
+id=10
+server_url = "http://localhost:3000/matches/"+str(id)
+header={"procon-token": "kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"}
+    
 def main():
     cwd=os.getcwd()+"/status"
     os.chdir(cwd)
 
-    id=10
-    server_url = "http://localhost:3000/matches/"+str(id)
-    header={"procon-token": "kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"}
-    
-
     t1=time.time()
     AI1=AI()
     AI2=AI()
-    AI3=AI()
-    AI4=AI()
-    AI5=AI()
-    AI6=AI()
-    AIs=[AI1,AI2,AI3,AI4,AI5,AI6]
+    #AI3=AI()
+    #AI4=AI()
+    #AI5=AI()
+    #AI6=AI()
+    #AIs=[AI1,AI2,AI3,AI4,AI5,AI6]
+    AIs=[AI1,AI2]
 
     #セットアップ
     for i in range(len(AIs)):
@@ -49,7 +49,7 @@ def main():
                 
                 #取る行動の選択
                 actionchoice=ChoiceAction(AIs)
-
+                print(AIs)
                 #選択の送信
                 for i in range(len(AIs)):
                     print([i+1]+actionchoice[i])
@@ -126,7 +126,9 @@ def game(command, value):
             return masons
 
     if command=="send":
-        a=0
+        actions={"type":2, "dir":2},{"type":2, "dir":2}
+        data = {'turn': '1', "actions":actions}
+        response = requests.post(server_url, headers=header,data=data)
     
 
 

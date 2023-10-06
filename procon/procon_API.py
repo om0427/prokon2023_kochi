@@ -6,36 +6,31 @@ def main():
     id=10
     server_url = "http://localhost:3000/matches/"+str(id)
     header={"procon-token": "kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"}
-    
-    actions={"type":2, "dir":2},{"type":2, "dir":2}
-    data = {'turn': '1', "actions":actions}
-    response = requests.post(server_url, headers=header,data=data)
-    print(response.status_code)
 
-    #response = requests.get(server_url, headers=header) 
-    #if response.status_code == 200:  # ステータスコード200は成功を示します
-    #    json_data = response.json()
-    #
-    #DataSave(json_data)
-#
-    #t2=time.time()
-    #print(t2-t1)
-#
-    #ctime=time.time()
-    #reload_time=0.2
-    #turn=json_data["turn"]
-    #while 1:
-    #    if time.time()-ctime > reload_time:
-    #        response = requests.get(server_url, headers=header)
-    #        if response.status_code == 200:  # ステータスコード200は成功を示します
-    #            json_data = response.json()
- #
-    #        if turn!=json_data["turn"]:
-    #            turn=json_data["turn"]
-    #            DataSave(json_data)
-    #            print(turn)
-#
-    #        ctime=time.time()
+    response = requests.get(server_url, headers=header) 
+    if response.status_code == 200:  # ステータスコード200は成功を示します
+        json_data = response.json()
+    
+    DataSave(json_data)
+
+    t2=time.time()
+    print(t2-t1)
+
+    ctime=time.time()
+    reload_time=0.2
+    turn=json_data["turn"]
+    while 1:
+        if time.time()-ctime > reload_time:
+            response = requests.get(server_url, headers=header)
+            if response.status_code == 200:  # ステータスコード200は成功を示します
+                json_data = response.json()
+ 
+            if turn!=json_data["turn"]:
+                turn=json_data["turn"]
+                DataSave(json_data)
+                print(turn)
+
+            ctime=time.time()
 
 
 def DataSave(json_data):
