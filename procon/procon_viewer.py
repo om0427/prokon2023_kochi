@@ -9,7 +9,7 @@ def main():
     pygame.display.set_caption('procon_gameorder')
     while 1:
         pygame.display.update()#画面の更新
-        #pygame.time.wait(15)#150fごとに画面を更新
+        pygame.time.wait(15)#150fごとに画面を更新
         screen.fill((0,0,0,0))#画面の背景色
 
         if (time.time()-beforetime) > 1:
