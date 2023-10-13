@@ -33,13 +33,19 @@ def main():
     AI1=AI()
     AI1.Init(1,game("get","height"),game("get","width"),game("get","masons"))
     AI2=AI()
-    AI1.Init(2,game("get","height"),game("get","width"),game("get","masons"))
-    #AI3=AI()
-    #AI4=AI()
-    #AI5=AI()
-    #AI6=AI()
-    #AIs=[AI1,AI2,AI3,AI4,AI5,AI6]
-    AIs=[AI1,AI2]
+    AI2.Init(2,game("get","height"),game("get","width"),game("get","masons"))
+    AI3=AI()
+    AI3.Init(3,game("get","height"),game("get","width"),game("get","masons"))
+    AI4=AI()
+    AI4.Init(4,game("get","height"),game("get","width"),game("get","masons"))
+    AI5=AI()
+    AI5.Init(5,game("get","height"),game("get","width"),game("get","masons"))
+    AI6=AI()
+    AI6.Init(6,game("get","height"),game("get","width"),game("get","masons"))
+    AIs_model=[AI1,AI2,AI3,AI4,AI5,AI6]
+    AIs=[]
+    for i in range(game("get","mason")):
+        AIs.append(AIs_model[i])
 
     #セットアップ
     for i in range(len(AIs)):
