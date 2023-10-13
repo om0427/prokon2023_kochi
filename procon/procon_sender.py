@@ -18,14 +18,18 @@ server_url = "http://localhost:3000/matches/"+str(id)
 token="token2"
 header={"procon-token": token}
 
+#移動する位置(バッティング防止)
+cantmoves=[2]
+
 def main():
+    global cantmoves
     cwd=os.getcwd()+"/status"
     os.chdir(cwd)
 
     #先行:0　後攻:1
     ahrm=1
 
-    t1=time.time()
+
     AI1=AI()
     AI1.Init(1,game("get","height"),game("get","width"),game("get","masons"))
     AI2=AI()
@@ -48,6 +52,12 @@ def main():
     reload_time=0.1
     turn=game("get","turn")
 
+    cantmoves=[]
+    for i in range(game("get","height")):
+        cantmoves.append([])
+        for k in range(game("get","width")):
+            cantmoves[i].append(1)
+
     actionchoice=ChoiceAction(AIs)
     while 1:
         if time.time()-ctime > reload_time:
@@ -56,7 +66,16 @@ def main():
                 turn=game("get","turn")
                 if turn %2 ==ahrm and turn>=0:
                     #取る行動の選択
+                    t1=time.time()
+
+                    cantmoves=[]
+                    for i in range(game("get","height")):
+                        cantmoves.append([])
+                        for k in range(game("get","width")):
+                            cantmoves[i].append(1)
                     actionchoice=ChoiceAction(AIs)
+                    t2=time.time()
+                    print(t2-t1)
                     #選択の送信
                     #for i in range(len(AIs)):
                     #    print(AIs[i].value)
@@ -64,8 +83,6 @@ def main():
                     
                     game("send", actionchoice)
 
-    t2=time.time()
-    print(t2-t1)
 
 
 
@@ -150,6 +167,8 @@ def game(command, value):
 def ChoiceAction(AIs):
     actionchoice=[]
     for i in range(len(AIs)):
+        global cantmoves
+        #print(cantmoves)
         AIs[i].actionassess(game("get", "structures"), game("get", "walls"), game("get", "territories"),game("get", "masons"), game("get", "height"), game("get", "width"),game("get","turn"))
         #最も評価値の高い行動を検索
         maxvalue=0
@@ -172,22 +191,22 @@ class AI:
     buildrampartnum=1
     rampartsize=2
 
-    diferdecay=0.9#距離によって評価値がどの程度減衰するか
+    diferdecay=0.8#距離によって評価値がどの程度減衰するか
 
     #移動するときの評価係数
-    neartocastle=0.3#城への近さ係数
-    neartofriend=0#味方の職人との近さ係数
-    neartoenemy=0#敵の職人との近さ係数
-    neartorampartable=2#城郭にすべき地点との近さ
-    neartoenmrampart=1#相手の城郭への近さ
-    neartoenemyterri=1#相手の領地への近さ
+    neartocastle=0.3#城への近さ係数/
+    neartofriend=0#味方の職人との近さ係数/
+    neartoenemy=0#敵の職人との近さ係数/
+    neartorampartable=2#城郭にすべき地点との近さ/
+    neartoenmrampart=1#相手の城郭への近さ/
+    neartoenemyterri=1#相手の領地への近さ/
 
     #建築するときの評価関数
     isrampartable=10#その場所を城郭にすべきか
     isenemyterritory=1#その場所が敵領地か
 
     #解体するときの評価関数
-    #isnearrampart=1#その城壁が城郭か
+    isnearrampart=1#その城壁が城郭か
     isstructure=1#敵の城壁があるか
 
     def Init(self,mason_num,height,width,masons):
@@ -199,11 +218,8 @@ class AI:
     
     #合法手のリストを求める
     def LegalMove(self, height, width, mason, walls, masons, structures):
+        global cantmoves
         LMlist=[]
-        if mason>0:
-            othersidewall=2
-        else:
-            othersidewall=1
         for i in range(height):
             for k in range(width):
                 if masons[i][k]==mason:
@@ -211,8 +227,10 @@ class AI:
                     posy=[i-1, i-1, i-1,  i , i+1, i+1, i+1,  i ]
                     for j in range(8):
                         if 0<=posy[j]<=height-1 and 0<=posx[j]<=width-1:
-                            if walls[posy[j]][posx[j]]!=othersidewall and masons[posy[j]][posx[j]]==0 and structures[posy[j]][posx[j]]!=1:
+                            if walls[posy[j]][posx[j]]!=2 and masons[posy[j]][posx[j]]==0 and structures[posy[j]][posx[j]]!=1 and cantmoves[posy[j]][posx[j]]==1:
                                 LMlist.append([1,j+1])
+                                cantmoves[posy[j]][posx[j]]=0
+
                     posx=[ k , k+1,  k , k-1]
                     posy=[i-1,  i , i+1,  i ]
                     translatenum=[2,4,6,8]
@@ -221,7 +239,7 @@ class AI:
                             if walls[posy[j]][posx[j]]==0 and structures[posy[j]][posx[j]]!=2:
                                 if (mason<0 and masons[posy[j]][posx[j]]<=0) or (mason>0 and masons[posy[j]][posx[j]]>=0):
                                     LMlist.append([2,translatenum[j]])
-                            if walls[posy[j]][posx[j]]==othersidewall:
+                            if walls[posy[j]][posx[j]]==2:
                                 LMlist.append([3,translatenum[j]])
 
         return LMlist
@@ -360,48 +378,46 @@ class AI:
             for k in range(width):
                 if structures[i][k]==2:
                     castle.append([k,i])
-        if self.cooltime<=0:
-            self.actionable(structures, height, width, pos)#建築できる場所を求める
-            route=[]
-            routelenmin=0
-            nearpoint=[]
-            for i in range(len(castle)):
-                route.append(self.RouteSerch(structures,height,width,self.masonpos,castle[i]))
-                if route[i]!=-1:
-                    nearpoint.append(10-len(route[i]))
-                else:
-                    nearpoint.append(0)
-
-            nesnumpoint=[]
-            maxnes=0
-            for i in range(len(castle)):
-                assen=self.buildrampart(height,width,castle[i],size)
-                if assen!=-1:
-                    nesnum=0
-                    for i in range(height):
-                        for k in range(width):
-                            if assen[i][k]==1 and walls[i][k]!=1:
-                                nesnum=nesnum+1
-                    nesnumpoint.append(nesnum)
-                    if maxnes<nesnum:
-                        maxnes=nesnum
-            
-            for i in range(len(nesnumpoint)):
+        #if self.cooltime<=0:
+        self.actionable(structures, height, width, pos)#建築できる場所を求める
+        route=[]
+        routelenmin=0
+        nearpoint=[]
+        for i in range(len(castle)):
+            route.append(self.RouteSerch(structures,height,width,self.masonpos,castle[i]))
+            if route[i]!=-1:
+                nearpoint.append(10-len(route[i]))
+            else:
+                nearpoint.append(0)
+        nesnumpoint=[]
+        maxnes=0
+        for i in range(len(castle)):
+            assen=self.buildrampart(height,width,castle[i],size)
+            if assen!=-1:
+                nesnum=0
+                for i in range(height):
+                    for k in range(width):
+                        if assen[i][k]==1 and walls[i][k]!=1:
+                            nesnum=nesnum+1
+                nesnumpoint.append(nesnum)
+                if maxnes<nesnum:
+                    maxnes=nesnum
+        
+        for i in range(len(nesnumpoint)):
+            if nesnumpoint[i]!=0:
                 nesnumpoint[i]=maxnes-nesnumpoint[i]
+        maxcastle=0
+        maxpoint=0
+        for i in range(len(nesnumpoint)):
+            if nearpoint[i]+nesnumpoint[i]>maxpoint:
+                maxpoint=nearpoint[i]+nesnumpoint[i]
+                maxcastle=i
+        self.targetcastle=maxcastle
+        #castle=random.sample(castle,choicenum)#ランダムに選んだ城の位置
 
-            maxcastle=0
-            maxpoint=0
-            for i in range(len(nesnumpoint)):
-                if nearpoint[i]+nesnumpoint[i]>maxpoint:
-                    maxpoint=nearpoint[i]+nesnumpoint[i]
-                    maxcastle=i
-
-            self.targetcastle=maxcastle
-            #castle=random.sample(castle,choicenum)#ランダムに選んだ城の位置
-
-            self.cooltime=10
-        else:
-            self.cooltime=self.cooltime-1
+        #    self.cooltime=10
+        #else:
+        #    self.cooltime=self.cooltime-1
 
 
 
@@ -431,7 +447,6 @@ class AI:
             for k in range(width):
                 if masons[i][k]==self.mason_num:
                     self.masonpos=[k,i]
-
         self.value=[]
         for i in self.actions:
             self.value.append(0)
@@ -454,14 +469,20 @@ class AI:
         castles=[]#城の位置
         mymasons=[]#味方の職人の位置
         enmasons=[]#敵の職人の位置
+        enmterri=[]#敵の領地の位置
+        enmrampart=[]
         for i in range(height):
             for k in range(width):
                 if structures[i][k]==2:
                     castles.append([k,i])
-                if masons[i][k]*self.mason_num>0 and masons[i][k]!=self.mason_num:
+                if masons[i][k]>0 and masons[i][k]!=self.mason_num:
                     mymasons.append([k,i])
-                elif masons[i][k]*self.mason_num<0:
+                elif masons[i][k]<0:
                     enmasons.append([k,i])
+                if territories[i][k]==2 or territories[i][k]==3:
+                    enmterri.append([k,i])
+                if walls[i][k]==2:
+                    enmrampart.append([k,i])
 
 
 
@@ -524,6 +545,24 @@ class AI:
                     value=value*self.diferdecay
                 self.value[i] +=value
 
+        #敵の領地との近さ評価値を求める
+        distances=self.moveassess(structures,height,width,enmterri)
+        for i in range(len(self.actions)):
+            if distances[i]!=0:
+                value=self.neartoenemyterri
+                for k in range(distances[i]):
+                    value=value*self.diferdecay
+                self.value[i]+=value
+        
+        #敵の城壁との近さ評価値を求める
+        distances=self.moveassess(structures,height,width,enmrampart)
+        for i in range(len(self.actions)):
+            if distances[i]!=0:
+                value=self.neartoenmrampart
+                for k in range(distances[i]):
+                    value=value*self.diferdecay
+                self.value[i]+=value
+        
 
         #城郭にすべき位置に建築する評価値を求める
         direx=[ self.masonpos[0] , self.masonpos[0]+1,  self.masonpos[0] , self.masonpos[0]-1]
@@ -535,10 +574,52 @@ class AI:
                     for i in range(len(self.actions)):
                         if self.actions[i][0]==2 and self.actions[i][1]==direnum[d]:
                             self.value[i]+=self.isrampartable
+        
+        #敵陣地に建築する評価値を求める
+        direx=[ self.masonpos[0] , self.masonpos[0]+1,  self.masonpos[0] , self.masonpos[0]-1]
+        direy=[self.masonpos[1]-1,  self.masonpos[1] , self.masonpos[1]+1,  self.masonpos[1] ]
+        direnum=[2,4,6,8]
+        for d in range(4):
+            if 0<=direx[d]<=width-1 and 0<=direy[d]<=height-1:
+                if territories[direy[d]][direx[d]]==2 or territories[direy[d]][direx[d]]==3:
+                    for i in range(len(self.actions)):
+                        if self.actions[i][0]==2 and self.actions[i][1]==direnum[d]:
+                            self.value[i]+=self.isenemyterritory
+
+        #解体に関する評価値を求める
+        direx=[ self.masonpos[0] , self.masonpos[0]+1,  self.masonpos[0] , self.masonpos[0]-1]
+        direy=[self.masonpos[1]-1,  self.masonpos[1] , self.masonpos[1]+1,  self.masonpos[1] ]
+        direnum=[2,4,6,8]
+        for d in range(4):
+            if 0<=direx[d]<=width-1 and 0<=direy[d]<=height-1:
+                if walls[direy[d]][direx[d]]==2:
+                    for action, val in zip(self.actions, self.value):
+                        if action[0]==3 and action[1]==direnum[d]:
+                            val+=self.isstructure
+
+                    direx2=[ direx[d] , direx[d]+1,  direx[d] , direx[d]-1]
+                    direy2=[direy[d]-1,  direy[d] , direy[d]+1,  direy[d] ]
+                    nearterri=False
+                    for d2 in range(4):
+                        if territories[direy2[d2]][direx2[d2]]==2 or territories[direy2[d2]][direx2[d2]]==3:
+                            nearterri=True
+                            break
+                    if nearterri:
+                        for i in range(len(self.actions)):
+                            if self.actions[i][0]==3 and self.actions[i][1]==direnum[d]:
+                                self.value[i]+=self.isnearrampart
+                                print(self.isnearrampart)
+        
+        for i in range(len(self.actions)):
+            if self.actions[i][0]==3:
+                print(self.value[i])
+        
+
 
         for i in range(len(self.actions)):
             if self.actions[i][0]==0:
                 self.value[i]+=self.isstructure
+            
         
 
 
