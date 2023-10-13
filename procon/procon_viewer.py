@@ -12,7 +12,7 @@ def main():
     os.chdir(cwd)
     with open("turn.dat") as file:
         turn=int(file.read())
-    while turn!=0:
+    while turn==-1:
         with open("turn.dat") as file:
             turn=int(file.read())
         time.sleep(0.1)

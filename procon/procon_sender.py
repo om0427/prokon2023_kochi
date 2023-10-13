@@ -51,9 +51,34 @@ def main():
     os.chdir(cwd)
 
     AI1=AI()
+    AI1.rampartsize=2
     AI2=AI()
+    AI2.neartocastle=0#城への近さ係数/
+    AI2.neartofriend=0#味方の職人との近さ係数/
+    AI2.neartoenemy=4#敵の職人との近さ係数/
+    AI2.neartorampartable=0#城郭にすべき地点との近さ/
+    AI2.neartoenmrampart=2#相手の城郭への近さ/
+    AI2.neartoenemyterri=2#相手の領地への近さ/
+    #建築するときの評価関数
+    AI2.isrampartable=0#その場所を城郭にすべきか
+    AI2.isenemyterritory=1#その場所が敵領地か
+    #解体するときの評価関数
+    AI2.isnearrampart=10#その城壁が城郭か
+    AI2.isstructure=10#敵の城壁があるか
     AI3=AI()
     AI4=AI()
+    AI4.neartocastle=0#城への近さ係数/
+    AI4.neartofriend=0#味方の職人との近さ係数/
+    AI4.neartoenemy=4#敵の職人との近さ係数/
+    AI4.neartorampartable=0#城郭にすべき地点との近さ/
+    AI4.neartoenmrampart=2#相手の城郭への近さ/
+    AI4.neartoenemyterri=2#相手の領地への近さ/
+    #建築するときの評価関数
+    AI4.isrampartable=0#その場所を城郭にすべきか
+    AI4.isenemyterritory=1#その場所が敵領地か
+    #解体するときの評価関数
+    AI4.isnearrampart=10#その城壁が城郭か
+    AI4.isstructure=10#敵の城壁があるか
     AI5=AI()
     AI6=AI()
     AIs_model=[AI1,AI2,AI3,AI4,AI5,AI6]
@@ -62,7 +87,7 @@ def main():
 
     with open("turn.dat") as file:
         turn=int(file.read())
-    while turn!=0:
+    while turn==-1:
         with open("turn.dat") as file:
             turn=int(file.read())
         time.sleep(0.1)
@@ -113,14 +138,28 @@ def main():
 
 def game(command, value):
     with open("mason.dat") as file:
-        mason=int(file.read())
+#        mason=int(file.read())
+        mason_data = file.read().strip()  # 改行文字を削除して読み込み
+        if mason_data:
+            mason = int(mason_data)
+        else:
+            mason = 0  # ファイルが空の場合、0 を設定
     with open("size.dat") as file:
-        data=file.read().split(",")
-        height=int(data[0])
-        width=int(data[1])
+        data = file.read().strip().split(",")
+        if len(data) == 2:
+            height, width = map(int, data)
+        else:
+            height, width = 0, 0  # ファイルが不正な形式の場合、0 で初期化
+#       data=file.read().split(",")
+#       height=int(data[0])
+#       width=int(data[1])
     with open("turn.dat") as file:
-        turn=int(file.read())
-
+#        turn=int(file.read())
+        turn_data = file.read().strip()
+    if turn_data:
+        turn = int(turn_data)
+    else:
+        turn = 0  # ファイルが空の場合、0 で初期化
     if command=="get":
         if value=="turn":
             with open("turn.dat") as file:
@@ -202,7 +241,10 @@ def ChoiceAction(AIs):
             if AIs[i].value[k]>maxvalue:
                 bestaction=k
                 maxvalue=AIs[i].value[k]
-        actionchoice.append(AIs[i].actions[bestaction])
+        if len(AIs[i].actions)==0:
+            actionchoice.append([0,0])
+        else:
+            actionchoice.append(AIs[i].actions[bestaction])
 
     return actionchoice
 
@@ -321,7 +363,7 @@ class AI:
                 mark[i].append(0)
         mark[currentpos[1]][currentpos[0]]=1
 
-        for time in range(15):
+        for time in range(20):
             for pos in oldL:
                 nextposx=[pos[-1][0]-1,  pos[-1][0] , pos[-1][0]+1, pos[-1][0]+1, pos[-1][0]+1,  pos[-1][0] , pos[-1][0]-1, pos[-1][0]-1]
                 nextposy=[pos[-1][1]-1, pos[-1][1]-1, pos[-1][1]-1,  pos[-1][1] , pos[-1][1]+1, pos[-1][1]+1 , pos[-1][1]+1, pos[-1][1] ]
@@ -440,7 +482,7 @@ class AI:
             self.targetcastle=maxcastle
             #castle=random.sample(castle,choicenum)#ランダムに選んだ城の位置
 
-            self.cooltime=10
+            self.cooltime=5
         else:
             self.cooltime=self.cooltime-1
             if territories[castle[self.targetcastle][1]][castle[self.targetcastle][0]]==1 or territories[castle[self.targetcastle][1]][castle[self.targetcastle][0]]==3:
