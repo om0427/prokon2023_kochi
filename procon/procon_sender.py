@@ -14,14 +14,16 @@ import os,csv,time,copy,random,requests
 
 id=10
 server_url = "http://localhost:3000/matches/"+str(id)
-header={"procon-token": "kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"}
+#token="kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"
+token="token2"
+header={"procon-token": token}
 
 def main():
     cwd=os.getcwd()+"/status"
     os.chdir(cwd)
 
     #先行:0　後攻:1
-    ahrm=0
+    ahrm=1
 
     t1=time.time()
     AI1=AI()
@@ -44,7 +46,7 @@ def main():
 
     ctime=time.time()
     reload_time=0.1
-    turn=0
+    turn=game("get","turn")
 
     actionchoice=ChoiceAction(AIs)
     while 1:
@@ -56,9 +58,9 @@ def main():
                     #取る行動の選択
                     actionchoice=ChoiceAction(AIs)
                     #選択の送信
-                    for i in range(len(AIs)):
-                        print(AIs[i].value)
-                        #print(AIs[i].LegalMove(game("get", "height"), game("get", "width"),game("get","mason"), game("get", "walls"),game("get", "masons") ,game("get", "structures")))
+                    #for i in range(len(AIs)):
+                    #    print(AIs[i].value)
+                    #    #print(AIs[i].LegalMove(game("get", "height"), game("get", "width"),game("get","mason"), game("get", "walls"),game("get", "masons") ,game("get", "structures")))
                     
                     game("send", actionchoice)
 
@@ -148,7 +150,7 @@ def game(command, value):
 def ChoiceAction(AIs):
     actionchoice=[]
     for i in range(len(AIs)):
-        AIs[i].actionassess(game("get", "structures"), game("get", "walls"), game("get", "territories"),game("get", "masons"), game("get", "height"), game("get", "width"))
+        AIs[i].actionassess(game("get", "structures"), game("get", "walls"), game("get", "territories"),game("get", "masons"), game("get", "height"), game("get", "width"),game("get","turn"))
         #最も評価値の高い行動を検索
         maxvalue=0
         bestaction=0
@@ -168,23 +170,21 @@ class AI:
     mason_num=0
 
     buildrampartnum=1
-    rampartsize=3
+    rampartsize=2
 
     diferdecay=0.9#距離によって評価値がどの程度減衰するか
 
     #移動するときの評価係数
-    neartocastle=1#城への近さ係数
+    neartocastle=0.3#城への近さ係数
     neartofriend=0#味方の職人との近さ係数
-    #neartofront=1#盤面中心との近さ係数
     neartoenemy=0#敵の職人との近さ係数
-    neartorampartable=1#城郭にすべき地点との近さ
-    #neartomyrampart=1#自身の城郭への近さ
-    #neartoenmrampart=1#相手の城郭への近さ
+    neartorampartable=2#城郭にすべき地点との近さ
+    neartoenmrampart=1#相手の城郭への近さ
+    neartoenemyterri=1#相手の領地への近さ
 
     #建築するときの評価関数
     isrampartable=10#その場所を城郭にすべきか
-    #isnearrampart=1#その場所が城郭の外側に接しているか
-    #isenemyterritory=1#その場所が敵領地か
+    isenemyterritory=1#その場所が敵領地か
 
     #解体するときの評価関数
     #isnearrampart=1#その城壁が城郭か
@@ -307,6 +307,7 @@ class AI:
         oldsearchpos=[castlepos]
         newsearchpos=[]
         mark[castlepos[1]][castlepos[0]]=1
+
         for i in range(size):
             for pos in oldsearchpos:
                 aroundposx=[ pos[0] , pos[0]+1,  pos[0] , pos[0]-1]
@@ -345,7 +346,7 @@ class AI:
                     mark[i][k]=1
                 else:
                     mark[i][k]=0
-        
+
         return mark                  
 
     targetcastle=0
@@ -353,7 +354,7 @@ class AI:
     cooltime=0#次に囲う城を更新するまでの長さ
     #建築できる場所、一つの城についての城郭にすべき場所の情報から、建築すべき場所を求める
     #size:城郭の半径 pos:職人の位置 choicenum:囲う城の個数
-    def buildplan(self, structures, height, width, size, pos, choicenum,walls):
+    def buildplan(self, structures, height, width, size, pos, choicenum,walls,turn):
         castle=[]#全ての城の位置
         for i in range(height):
             for k in range(width):
@@ -361,7 +362,6 @@ class AI:
                     castle.append([k,i])
         if self.cooltime<=0:
             self.actionable(structures, height, width, pos)#建築できる場所を求める
-
             route=[]
             routelenmin=0
             nearpoint=[]
@@ -378,13 +378,9 @@ class AI:
                 assen=self.buildrampart(height,width,castle[i],size)
                 if assen!=-1:
                     nesnum=0
-                    if self.mason_num>0:
-                        side=1
-                    else:
-                        side=2
                     for i in range(height):
                         for k in range(width):
-                            if assen[i][k]==1 and walls[i][k]!=side:
+                            if assen[i][k]==1 and walls[i][k]!=1:
                                 nesnum=nesnum+1
                     nesnumpoint.append(nesnum)
                     if maxnes<nesnum:
@@ -392,7 +388,7 @@ class AI:
             
             for i in range(len(nesnumpoint)):
                 nesnumpoint[i]=maxnes-nesnumpoint[i]
-            
+
             maxcastle=0
             maxpoint=0
             for i in range(len(nesnumpoint)):
@@ -408,18 +404,18 @@ class AI:
             self.cooltime=self.cooltime-1
 
 
+
         mark=[]#建築すべき場所に1をおいた二次元配列
         for i in range(height):
             mark.append([])
             for k in range(width):
                 mark[i].append(0)
-        for castlepos in castle:
-            assen=self.buildrampart(height, width, castlepos, size)
-            if assen!=-1:
-                for i in range(height):
-                    for k in range(width):
-                        if assen[i][k]==1:
-                            mark[i][k]=1
+        assen=self.buildrampart(height, width, castle[self.targetcastle], size)
+        if assen!=-1:
+            for i in range(height):
+                for k in range(width):
+                    if assen[i][k]==1:
+                        mark[i][k]=1
 
         return mark
     
@@ -428,7 +424,7 @@ class AI:
     actions=[]#合法行動のリスト
     value=[]#各行動の評価
     #行動評価
-    def actionassess(self, structures, walls, territories, masons, width, height):
+    def actionassess(self, structures, walls, territories, masons, width, height,turn):
         self.actions=self.LegalMove(height, width, self.mason_num, walls, masons, structures)
 
         for i in range(height):
@@ -441,16 +437,12 @@ class AI:
             self.value.append(0)
 
         
-        self.buildmark=self.buildplan(structures, height, width, self.rampartsize, self.masonpos, self.buildrampartnum,walls)
+        self.buildmark=self.buildplan(structures, height, width, self.rampartsize, self.masonpos, self.buildrampartnum,walls,turn)
 
         buildpos=[]#城郭にすべき位置に建築できる位置
         for i in range(height):
             for k in range(width):
-                if self.mason_num>0:
-                    mynum=1
-                else:
-                    mynum=2
-                if self.buildmark[i][k]==1 and walls[i][k]!=mynum:
+                if self.buildmark[i][k]==1 and walls[i][k]!=1:
                     direx=[ k , k+1,  k , k-1]
                     direy=[i-1,  i , i+1,  i ]
                     for d in range(4):
@@ -458,15 +450,6 @@ class AI:
                             if self.actionablepos[direy[d]][direx[d]]==1 and structures[i][k]!=1:
                                 buildpos.append([direx[d],direy[d]])
 
-        #for i in range(height):
-        #    for k in range(width):
-        #        if self.buildmark[i][k]==1:
-        #            print("2",end=" ")
-        #        elif [i,k] in buildpos:
-        #            print("1",end=" ")
-        #        else:
-        #            print("0",end=" ")
-        #    print()
 
         castles=[]#城の位置
         mymasons=[]#味方の職人の位置
@@ -480,6 +463,29 @@ class AI:
                 elif masons[i][k]*self.mason_num<0:
                     enmasons.append([k,i])
 
+
+
+
+
+
+
+        #評価値を求める
+        #print(self.value)
+        #print(self.mason_num,":",self.masonpos)
+        #for data in self.buildmark:
+        #    print(data)
+        #print()
+        #for i in range(height):
+        #    for k in range(width):
+        #        if self.buildmark[i][k]==1 and walls[i][k]!=1:
+        #            print("2",end=" ")
+        #        elif [k,i] in buildpos:
+        #            print("1",end=" ")
+        #        else:
+        #            print("0",end=" ")
+        #    print()
+        #print()
+
         #城の近さ評価値を求める
         distances=self.moveassess(structures, height, width,[castles[self.targetcastle]])
         for i in range(len(self.actions)):
@@ -489,6 +495,7 @@ class AI:
                     value=value*self.diferdecay
                 self.value[i] +=value
         
+
         #味方の職人との近さ評価値を求める
         distances=self.moveassess(structures, height, width, mymasons)
         for i in range(len(self.actions)):
@@ -497,7 +504,7 @@ class AI:
                 for k in range(distances[i]):
                     value=value*self.diferdecay
                 self.value[i] +=value
-                
+
         #敵の職人との近さ評価値を求める
         distances=self.moveassess(structures, height, width, enmasons)
         for i in range(len(self.actions)):
@@ -506,6 +513,7 @@ class AI:
                 for k in range(distances[i]):
                     value=value*self.diferdecay
                 self.value[i] +=value
+
 
         #城郭にすべき位置に建築できる位置との近さ評価値を求める
         distances=self.moveassess(structures, height, width, buildpos)
@@ -516,14 +524,11 @@ class AI:
                     value=value*self.diferdecay
                 self.value[i] +=value
 
+
         #城郭にすべき位置に建築する評価値を求める
         direx=[ self.masonpos[0] , self.masonpos[0]+1,  self.masonpos[0] , self.masonpos[0]-1]
         direy=[self.masonpos[1]-1,  self.masonpos[1] , self.masonpos[1]+1,  self.masonpos[1] ]
         direnum=[2,4,6,8]
-        if self.mason_num>0:
-            mynum=1
-        else:
-            mynum=2
         for d in range(4):
             if 0<=direx[d]<=width-1 and 0<=direy[d]<=height-1:
                 if self.buildmark[direy[d]][direx[d]]==1:
@@ -535,7 +540,6 @@ class AI:
             if self.actions[i][0]==0:
                 self.value[i]+=self.isstructure
         
-        print(self.value)
 
 
     #移動行動の評価
@@ -552,6 +556,7 @@ class AI:
             r=self.RouteSerch(structures, height, width, self.masonpos, d)
             if r!=-1:
                 list.append(r)
+        
 
         #各方向の最も近い距離を求める
         for data in list:
