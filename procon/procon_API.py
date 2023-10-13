@@ -4,9 +4,11 @@ def main():
     t1=time.time()
 
     id=10
+    server_id_url="http://localhost:3000/matches"
+
     server_url = "http://localhost:3000/matches/"+str(id)
     #token="kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"
-    token="token2"
+    token="token1"
     header={"procon-token": token}
 
     response = requests.get(server_url, headers=header)

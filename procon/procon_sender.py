@@ -12,45 +12,62 @@ import os,csv,time,copy,random,requests
 #send  :送信し、ゲームを進行する（中止）
 #       0
 
-id=10
-server_url = "http://localhost:3000/matches/"+str(id)
+num=0
+
 #token="kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"
-token="token2"
+token="token1"
 header={"procon-token": token}
 
+server_id_url="http://localhost:3000/matches"
+
+response = requests.get(server_id_url, headers=header)
+while response.status_code != 200:  # ステータスコード200は成功を示します
+    response = requests.get(server_id_url, headers=header)
+    time.sleep(0.3)
+
+data=response.json()
+
+
+if num<len(data):
+    id=data["matches"][num]["id"]
+    if data["matches"][num]["first"]:
+        #先行:0　後攻:1
+        ahrm=0
+    else:
+        #先行:0　後攻:1
+        ahrm=1
+
+
+server_url = "http://localhost:3000/matches/"+str(id)
+
 #移動する位置(バッティング防止)
-cantmoves=[2]
+cantmoves=[]
 
 def main():
     global cantmoves
+    #先行:0　後攻:1
+    global ahrm
     cwd=os.getcwd()+"/status"
     os.chdir(cwd)
 
-    #先行:0　後攻:1
-    ahrm=1
-
-
     AI1=AI()
-    AI1.Init(1,game("get","height"),game("get","width"),game("get","masons"))
     AI2=AI()
-    AI2.Init(2,game("get","height"),game("get","width"),game("get","masons"))
     AI3=AI()
-    AI3.Init(3,game("get","height"),game("get","width"),game("get","masons"))
     AI4=AI()
-    AI4.Init(4,game("get","height"),game("get","width"),game("get","masons"))
     AI5=AI()
-    AI5.Init(5,game("get","height"),game("get","width"),game("get","masons"))
     AI6=AI()
-    AI6.Init(6,game("get","height"),game("get","width"),game("get","masons"))
     AIs_model=[AI1,AI2,AI3,AI4,AI5,AI6]
     AIs=[]
+
+    response = requests.get(server_id_url, headers=header)
+    while response.status_code != 200:#ステータスコード200は成功を示します
+        response = requests.get(server_id_url, headers=header)
+        time.sleep(0.3)
+
     for i in range(game("get","mason")):
+        AIs_model[i].Init(i+1,game("get","height"),game("get","width"),game("get","masons"))
         AIs.append(AIs_model[i])
 
-    #セットアップ
-    for i in range(len(AIs)):
-        AIs[i].mason_num=(i+1)
-    
     with open("turn.dat") as file:
         turn=int(file.read())
 
@@ -384,46 +401,46 @@ class AI:
             for k in range(width):
                 if structures[i][k]==2:
                     castle.append([k,i])
-        #if self.cooltime<=0:
-        self.actionable(structures, height, width, pos)#建築できる場所を求める
-        route=[]
-        routelenmin=0
-        nearpoint=[]
-        for i in range(len(castle)):
-            route.append(self.RouteSerch(structures,height,width,self.masonpos,castle[i]))
-            if route[i]!=-1:
-                nearpoint.append(10-len(route[i]))
-            else:
-                nearpoint.append(0)
-        nesnumpoint=[]
-        maxnes=0
-        for i in range(len(castle)):
-            assen=self.buildrampart(height,width,castle[i],size)
-            if assen!=-1:
-                nesnum=0
-                for i in range(height):
-                    for k in range(width):
-                        if assen[i][k]==1 and walls[i][k]!=1:
-                            nesnum=nesnum+1
-                nesnumpoint.append(nesnum)
-                if maxnes<nesnum:
-                    maxnes=nesnum
-        
-        for i in range(len(nesnumpoint)):
-            if nesnumpoint[i]!=0:
-                nesnumpoint[i]=maxnes-nesnumpoint[i]
-        maxcastle=0
-        maxpoint=0
-        for i in range(len(nesnumpoint)):
-            if nearpoint[i]+nesnumpoint[i]>maxpoint:
-                maxpoint=nearpoint[i]+nesnumpoint[i]
-                maxcastle=i
-        self.targetcastle=maxcastle
-        #castle=random.sample(castle,choicenum)#ランダムに選んだ城の位置
+        if self.cooltime<=0:
+            self.actionable(structures, height, width, pos)#建築できる場所を求める
+            route=[]
+            routelenmin=0
+            nearpoint=[]
+            for i in range(len(castle)):
+                route.append(self.RouteSerch(structures,height,width,self.masonpos,castle[i]))
+                if route[i]!=-1:
+                    nearpoint.append(10-len(route[i]))
+                else:
+                    nearpoint.append(0)
+            nesnumpoint=[]
+            maxnes=0
+            for i in range(len(castle)):
+                assen=self.buildrampart(height,width,castle[i],size)
+                if assen!=-1:
+                    nesnum=0
+                    for i in range(height):
+                        for k in range(width):
+                            if assen[i][k]==1 and walls[i][k]!=1:
+                                nesnum=nesnum+1
+                    nesnumpoint.append(nesnum)
+                    if maxnes<nesnum:
+                        maxnes=nesnum
+            
+            for i in range(len(nesnumpoint)):
+                if nesnumpoint[i]!=0:
+                    nesnumpoint[i]=maxnes-nesnumpoint[i]
+            maxcastle=0
+            maxpoint=0
+            for i in range(len(nesnumpoint)):
+                if nearpoint[i]+nesnumpoint[i]>maxpoint:
+                    maxpoint=nearpoint[i]+nesnumpoint[i]
+                    maxcastle=i
+            self.targetcastle=maxcastle
+            #castle=random.sample(castle,choicenum)#ランダムに選んだ城の位置
 
-        #    self.cooltime=10
-        #else:
-        #    self.cooltime=self.cooltime-1
+            self.cooltime=10
+        else:
+            self.cooltime=self.cooltime-1
 
 
 
@@ -479,7 +496,7 @@ class AI:
         enmrampart=[]
         for i in range(height):
             for k in range(width):
-                if structures[i][k]==2:
+                if structures[i][k]==2 and (territories[i][k]!=1 or territories[i][k]!=3):
                     castles.append([k,i])
                 if masons[i][k]>0 and masons[i][k]!=self.mason_num:
                     mymasons.append([k,i])
@@ -616,15 +633,10 @@ class AI:
                                 self.value[i]+=self.isnearrampart
                                 print(self.isnearrampart)
         
-        for i in range(len(self.actions)):
-            if self.actions[i][0]==3:
-                print(self.value[i])
+        print(self.value)
         
 
 
-        for i in range(len(self.actions)):
-            if self.actions[i][0]==0:
-                self.value[i]+=self.isstructure
             
         
 
