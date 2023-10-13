@@ -2,14 +2,27 @@ import time,requests,json,os,csv,time
 
 def main():
     t1=time.time()
+    
+    num=0
 
-    id=10
-    server_id_url="http://localhost:3000/matches"
-
-    server_url = "http://localhost:3000/matches/"+str(id)
     #token="kochi89665ca9ed3105039b52d806dab0a35e70b96906f7a7db2025da133a323"
     token="token1"
     header={"procon-token": token}
+
+    server_id_url="http://localhost:3000/matches"
+
+    response = requests.get(server_id_url, headers=header)
+    while response.status_code != 200:  # ステータスコード200は成功を示します
+        response = requests.get(server_id_url, headers=header)
+        time.sleep(0.3)
+
+    data=response.json()
+
+
+    if num<len(data):
+        id=data["matches"][num]["id"]
+
+    server_url = "http://localhost:3000/matches/"+str(id)
 
     response = requests.get(server_url, headers=header)
     while response.status_code != 200:  # ステータスコード200は成功を示します
@@ -26,6 +39,7 @@ def main():
     ctime=time.time()
     reload_time=0.2
     turn=json_data["turn"]
+    print(turn)
     
     while 1:
         if time.time()-ctime > reload_time:

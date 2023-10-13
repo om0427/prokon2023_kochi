@@ -1,5 +1,5 @@
 #import procon_class as goc
-import pygame, sys, time, os, csv, copy
+import pygame, sys, time, os, csv, copy,requests
 from pygame.locals import *
 def main():
     beforetime=time.time()
@@ -7,6 +7,17 @@ def main():
     pygame.display.set_mode((850,680),0,32)#画面の大きさを設定する
     screen=pygame.display.get_surface()#画面を取得する
     pygame.display.set_caption('procon_gameorder')
+
+    cwd=os.getcwd()+"/status"
+    os.chdir(cwd)
+    with open("turn.dat") as file:
+        turn=int(file.read())
+    while turn!=0:
+        with open("turn.dat") as file:
+            turn=int(file.read())
+        time.sleep(0.1)
+    os.chdir("../")
+
     while 1:
         pygame.display.update()#画面の更新
         pygame.time.wait(15)#150fごとに画面を更新
