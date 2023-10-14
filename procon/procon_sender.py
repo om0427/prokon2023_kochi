@@ -51,30 +51,36 @@ def main():
     os.chdir(cwd)
 
     AI1=AI()
-    AI1.rampartsize=2
+    AI1.rampartsize=3
+    AI1.neartoenmrampart=0
+    AI1.neartocastle=0
+    AI1.neartofriend=-10
     AI2=AI()
-    AI2.neartocastle=0#城への近さ係数/
-    AI2.neartofriend=0#味方の職人との近さ係数/
-    AI2.neartoenemy=4#敵の職人との近さ係数/
+    AI2.neartocastle=2#城への近さ係数/
+    AI2.neartofriend=-21#味方の職人との近さ係数/
+    AI2.neartoenemy=0#敵の職人との近さ係数/
     AI2.neartorampartable=0#城郭にすべき地点との近さ/
-    AI2.neartoenmrampart=2#相手の城郭への近さ/
-    AI2.neartoenemyterri=2#相手の領地への近さ/
+    AI2.neartoenmrampart=0#相手の城郭への近さ/
+    AI2.neartoenemyterri=0#相手の領地への近さ/
     #建築するときの評価関数
     AI2.isrampartable=0#その場所を城郭にすべきか
     AI2.isenemyterritory=1#その場所が敵領地か
     #解体するときの評価関数
-    AI2.isnearrampart=10#その城壁が城郭か
-    AI2.isstructure=10#敵の城壁があるか
+    AI2.isnearrampart=0#その城壁が城郭か
+    AI2.isstructure=0#敵の城壁があるか
     AI3=AI()
+    AI3.neartocastle=0
+    AI3.neartofriend=-10
+    AI3.rampartsize=1
     AI4=AI()
-    AI4.neartocastle=0#城への近さ係数/
+    AI4.neartocastle=-20#城への近さ係数/
     AI4.neartofriend=0#味方の職人との近さ係数/
     AI4.neartoenemy=4#敵の職人との近さ係数/
     AI4.neartorampartable=0#城郭にすべき地点との近さ/
     AI4.neartoenmrampart=2#相手の城郭への近さ/
     AI4.neartoenemyterri=2#相手の領地への近さ/
     #建築するときの評価関数
-    AI4.isrampartable=0#その場所を城郭にすべきか
+    AI4.isrampartable=10#その場所を城郭にすべきか
     AI4.isenemyterritory=1#その場所が敵領地か
     #解体するときの評価関数
     AI4.isnearrampart=10#その城壁が城郭か
@@ -256,25 +262,25 @@ class AI:
     mason_num=0
 
     buildrampartnum=1
-    rampartsize=3
+    rampartsize=2
 
-    diferdecay=0.8#距離によって評価値がどの程度減衰するか
+    diferdecay=0.9#距離によって評価値がどの程度減衰するか
 
     #移動するときの評価係数
     neartocastle=0.3#城への近さ係数/
-    neartofriend=0#味方の職人との近さ係数/
+    neartofriend=25#味方の職人との近さ係数/
     neartoenemy=0#敵の職人との近さ係数/
-    neartorampartable=5#城郭にすべき地点との近さ/
-    neartoenmrampart=1#相手の城郭への近さ/
-    neartoenemyterri=1#相手の領地への近さ/
+    neartorampartable=13#城郭にすべき地点との近さ/
+    neartoenmrampart=0#相手の城郭への近さ/
+    neartoenemyterri=5#相手の領地への近さ/
 
     #建築するときの評価関数
-    isrampartable=10#その場所を城郭にすべきか
-    isenemyterritory=1#その場所が敵領地か
+    isrampartable=12#その場所を城郭にすべきか
+    isenemyterritory=0#その場所が敵領地か
 
     #解体するときの評価関数
-    isnearrampart=1#その城壁が城郭か
-    isstructure=1#敵の城壁があるか
+    isnearrampart=20#その城壁が城郭か
+    isstructure=3#敵の城壁があるか
 
     def Init(self,mason_num,height,width,masons):
         self.mason_num=mason_num
